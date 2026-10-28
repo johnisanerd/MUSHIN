@@ -155,7 +155,11 @@ export class DiscoveryOrchestrator {
 
         const items = await this.apify.runActor(
           actorId,
-          { urls: [result.url] },
+          result.platform === 'youtube'
+            ? /youtu\.be\/|\/watch\?|\/shorts\//.test(result.url)
+              ? { startUrls: [{ url: result.url }] }
+              : { channels: [result.url], maxResultsShorts: 1 }
+            : { urls: [result.url] },
           { timeoutSecs: this.config.scrapeTimeout },
         );
 
@@ -163,9 +167,12 @@ export class DiscoveryOrchestrator {
           const scraped = items[0]!;
           results.push({
             ...result,
-            handle: (scraped['handle'] as string) ?? result.handle,
-            displayName: (scraped['displayName'] as string) ?? result.displayName,
-            followerCount: scraped['followerCount'] as number | undefined,
+            handle: ((scraped['handle'] ?? scraped['channelUsername']) as string) ?? result.handle,
+            displayName:
+              ((scraped['displayName'] ?? scraped['channelName']) as string) ?? result.displayName,
+            followerCount:
+              (scraped['followerCount'] as number | undefined) ??
+              (scraped['numberOfSubscribers'] as number | undefined),
             engagementRate: scraped['engagementRate'] as number | undefined,
             confidence: 0.7, // Higher confidence with scraped data
           });
@@ -263,7 +270,7 @@ export class DiscoveryOrchestrator {
     const actors: Record<string, string> = {
       instagram: 'apify/instagram-profile-scraper',
       tiktok: 'apify/tiktok-profile-scraper',
-      youtube: 'apify/youtube-channel-scraper',
+      youtube: 'johnvc~youtube-shorts-api',
       twitter: 'apify/twitter-profile-scraper',
     };
     return actors[platform] ?? null;

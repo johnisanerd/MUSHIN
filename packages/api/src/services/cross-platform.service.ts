@@ -148,8 +148,10 @@ export class CrossPlatformDiscoveryService {
     // Create candidate identity data
     const candidate: CreatorIdentityData = {
       creatorId: 'candidate',
-      displayName: profileData['displayName'] as string | null ?? topResult.title,
-      primaryHandle: profileData['handle'] as string | null,
+      displayName:
+        ((profileData['displayName'] ?? profileData['channelName']) as string | null) ??
+        topResult.title,
+      primaryHandle: (profileData['handle'] ?? profileData['channelUsername']) as string | null,
       platformData: profileData,
     };
 
@@ -189,7 +191,12 @@ export class CrossPlatformDiscoveryService {
     if (!actorId) return {};
 
     try {
-      const items = await this.apify.runActor(actorId, { urls: [url] }, { timeoutSecs: 60 });
+      // A video or Shorts link goes in startUrls; its row still carries the channel stats
+      const ytInput = /youtu\.be\/|\/watch\?|\/shorts\//.test(url)
+        ? { startUrls: [{ url }] }
+        : { channels: [url], maxResultsShorts: 1 };
+      const input = platform === 'youtube' ? ytInput : { urls: [url] };
+      const items = await this.apify.runActor(actorId, input, { timeoutSecs: 60 });
       return items[0] ?? {};
     } catch {
       return {};
@@ -200,7 +207,7 @@ export class CrossPlatformDiscoveryService {
     const actors: Record<string, string> = {
       instagram: 'apify/instagram-profile-scraper',
       tiktok: 'apify/tiktok-profile-scraper',
-      youtube: 'apify/youtube-channel-scraper',
+      youtube: 'johnvc~youtube-shorts-api',
       twitter: 'apify/twitter-profile-scraper',
     };
     return actors[platform] ?? null;

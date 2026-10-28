@@ -47,7 +47,7 @@ async function testApifyActors() {
   // Test 4: YouTube scraper availability
   console.log('\n4. Check YouTube scraper...');
   try {
-    const res = await fetch('https://api.apify.com/v2/acts/apify~youtube-scraper', {
+    const res = await fetch('https://api.apify.com/v2/acts/johnvc~youtube-shorts-api', {
       headers: { 'Authorization': 'Bearer ' + env.APIFY_TOKEN }
     });
     const d = await res.json();
